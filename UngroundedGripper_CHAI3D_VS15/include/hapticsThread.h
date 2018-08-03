@@ -78,10 +78,14 @@ public:
 	chai3d::cFrequencyCounter hapticRate;   // counter for haptics updates
 
 
-											// a virtual object
+	// virtual objects
 	cMultiMesh* object;
 	cShapeCylinder* cylinder;
 	cShapeSphere* m_curSphere0;
+	cShapeSphere* m_curSphere1;
+	cShapeLine* graspLine;
+	cMesh* ground;
+	cShapeBox* m_gripperBase;
 
 	chai3d::cWorld* world;                  // CHAI world
 	chai3d::cCamera* camera;                // camera to render the world
@@ -98,7 +102,7 @@ public:
 
 	cFontPtr font;				// a font for rendering text
 	cLabel* labelRates;			// a label to display the rate [Hz] at which the simulation is running
-
+	cLabel* labelForce;			// a label to display the force on the gripper tool
 
 	chai3d::cGenericHapticDevicePtr chaiMagDevice;
 
@@ -108,11 +112,20 @@ public:
 
 	cHapticDeviceHandler* handler;			// a haptic device handler
 	cGenericHapticDevicePtr hapticDevice;	// a pointer to the current haptic device
-	cToolCursor* tool;						// a virtual tool representing the haptic device in the scene
+	cToolGripper* tool;						// a virtual tool representing the haptic device in the scene
 	gripper* m_gripper;						// the member gripper instantiation
-	void hapticsThread::pairWithGripper(gripper *a_gripper);
+	cMatrix3d m_gripperRot;
+	cMultiMesh* finger;
+	cMultiMesh* thumb;
 
+	void pairWithGripper(gripper *a_gripper);
+	void loadFingerMeshes();
 	double toolRadius;
+	cVector3d m_gripperForce;
+	cVector3d m_gripperTorque;
+	double m_gripperGripForce;
+	cVector3d m_thumbForce;
+	cVector3d m_fingerForce;
 
 	int swapInterval = 1;			// swap interval for the display context (vertical synchronization)
 

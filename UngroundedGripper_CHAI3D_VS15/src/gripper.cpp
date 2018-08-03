@@ -96,3 +96,24 @@ bool gripper::sendCommand(pantograph& pThumb, pantograph& pIndex)
 	pIndex.sendCommand();
 	return(C_SUCCESS);
 }
+
+// receive force and torque information in the gripper's local coordinate frame
+void gripper::setForcesAndTorques(cVector3d a_force, cVector3d a_torque, double a_gripForce, cVector3d a_thumbForce, cVector3d a_fingerForce) {
+	m_gripperLock.acquire();
+	m_force = a_force;
+	m_torque = a_torque;
+	m_gripForce = a_gripForce;
+
+	// in local coordinates
+	m_thumbForce = a_thumbForce;
+	m_fingerForce = a_fingerForce;
+	m_gripForce = a_thumbForce.y() + a_fingerForce.y();
+	
+	
+	cout << m_gripForce << endl;
+	m_gripperLock.release();
+
+	// calculate desired gripper motor action																	------TO DO-----
+	// calculate desired position for each pantograph in pantograph class
+	// set motor commands 
+}

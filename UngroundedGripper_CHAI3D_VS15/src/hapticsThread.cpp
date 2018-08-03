@@ -1,7 +1,7 @@
 #include "hapticsThread.h"
 
 
-
+// call in main before starting thread 
 void hapticsThread::pairWithGripper(gripper *a_gripper) {
 	m_gripper = a_gripper;
 
@@ -18,6 +18,11 @@ int hapticsThread::initialize( void ) {
 	setUpHapticDevice();
 	addObjects();
 	
+	// set output to zero to start
+	m_gripperForce = { 0.0, 0.0, 0.0 };
+	m_gripperTorque = { 0.0, 0.0, 0.0 };
+	m_gripperGripForce = 0.0;
+
 	return errors;
 }
 
@@ -145,7 +150,7 @@ int hapticsThread::setUpHapticDevice(void) {
 	//cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();		// retrieve information about the current haptic device
 	//hapticDevice->setEnableGripperUserSwitch(true);			// if the haptic devices carries a gripper, enable it to behave like a user switch
 	chaiMagDevice->setEnableGripperUserSwitch(true);
-	tool = new cToolCursor(world);			// create a 3D tool and add it to the world
+	tool = new cToolGripper(world);			// create a 3D tool and add it to the world
 	world->addChild(tool);
 	
 	//tool->setHapticDevice(hapticDevice);
@@ -172,17 +177,40 @@ int hapticsThread::setUpHapticDevice(void) {
 	// initialize tool by connecting to haptic device
 	tool->start();
 
-	// Can use this to show frames on tool if so desired
-	//create a sphere to represent the tool
-	m_curSphere0 = new chai3d::cShapeSphere(toolRadius);
-	world->addChild(m_curSphere0);
+	//create a sphere to represent each side of the gripper tool
+	m_curSphere0 = new chai3d::cShapeSphere(1.1*toolRadius);
 	m_curSphere0->m_material->setRed(); // setGrayDarkSlate();
-	m_curSphere0->setShowFrame(false);
-	m_curSphere0->setFrameSize(0.05);
 	m_curSphere0->setTransparencyLevel(0);
-	cVector3d startPos = { 0.5, 0.5, 0.5 };
-	m_curSphere0->setLocalPos(startPos);
+	m_curSphere0->setShowFrame(false);			// Can use this to show frames on tool if so desired
+	m_curSphere0->setFrameSize(0.1);
 
+	m_curSphere1 = new chai3d::cShapeSphere(1.1*toolRadius);
+	m_curSphere1->m_material->setGreenLawn(); // setGrayDarkSlate();
+	m_curSphere1->setTransparencyLevel(0);
+	m_curSphere1->setShowFrame(false);			// Can use this to show frames on tool if so desired
+	m_curSphere1->setFrameSize(0.1);
+
+	//m_gripperBase = new chai3d::cShapeBox(.1, .2, .1);
+	////world->addChild(m_gripperBase);
+	////cVector3d startPos = { 0.5, 0.5, 0.5 };
+	////m_gripperBase->setLocalPos(startPos);
+	//m_gripperBase->m_material->setBlue();
+	//m_gripperBase->setTransparencyLevel(0);
+
+	//tool->m_hapticPointFinger->m_sphereProxy->addChild(m_curSphere0);
+	//tool->m_hapticPointThumb->m_sphereProxy->addChild(m_curSphere1);
+	tool->m_hapticPointFinger->setShow(false, false);
+	tool->m_hapticPointThumb->setShow(false, false);
+	// create a small white line that will be enabled every time the operator
+	// grasps an object. The line indicated the connection between the
+	// position of the tool and the grasp position on the object
+	graspLine = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
+	world->addChild(graspLine);
+	graspLine->m_colorPointA.set(1.0, 1.0, 1.0);
+	graspLine->m_colorPointB.set(1.0, 1.0, 1.0);
+	graspLine->setShowEnabled(false);
+
+	loadFingerMeshes();
 	return 0;
 }
 
@@ -289,6 +317,45 @@ int hapticsThread::addObjects(void) {
 	object->setStiffness(maxStiffness, true);		// define a default stiffness for the object
 	object->setFriction(0.1, 0.2, true);			// define some haptic friction properties
 
+
+//--------------------------------------------------------------------------
+// GROUND
+//--------------------------------------------------------------------------
+	ground = new cMesh();
+	world->addChild(ground);
+	// create 4 vertices (one at each corner)
+	double groundSize = 2.0;
+	int vertices0 = ground->newVertex(-groundSize, -groundSize, 0.0);
+	int vertices1 = ground->newVertex(groundSize, -groundSize, 0.0);
+	int vertices2 = ground->newVertex(groundSize, groundSize, 0.0);
+	int vertices3 = ground->newVertex(-groundSize, groundSize, 0.0);
+
+	// compose surface with 2 triangles
+	ground->newTriangle(vertices0, vertices1, vertices2);
+	ground->newTriangle(vertices0, vertices2, vertices3);
+
+	// compute surface normals
+	ground->computeAllNormals();
+
+	// position ground at the right level
+	ground->setLocalPos(0.0, 0.0, -0.9);
+
+	// define some material properties and apply to mesh
+	cMaterial matGround;
+	matGround.setDynamicFriction(0.7);
+	matGround.setStaticFriction(1.0);
+	matGround.m_ambient.set(0.0, 0.0, 0.0);
+	matGround.m_diffuse.set(0.0, 0.0, 0.0);
+	matGround.m_specular.set(0.0, 0.0, 0.0);
+	ground->setMaterial(matGround);
+
+	// enable and set transparency level of ground
+	ground->setTransparencyLevel(0.1);
+	ground->setUseTransparency(true);
+
+	// setup collision detector
+	ground->createAABBCollisionDetector(toolRadius);
+
 	return 0;
 };
 
@@ -304,9 +371,69 @@ void hapticsThread::setUpWidgets(void) {
 	labelRates->m_fontColor.setWhite();
 	camera->m_frontLayer->addChild(labelRates);
 
+	labelForce = new cLabel(font);
+	labelForce->m_fontColor.setWhite();
+	camera->m_frontLayer->addChild(labelForce);
+
 }
 
+void hapticsThread::loadFingerMeshes(void) {
+	//--------------------------------------------------------------------------
+	// FINGER MESHES
+	//--------------------------------------------------------------------------
+	finger = new chai3d::cMultiMesh(); // create the finger
+	world->addChild(finger);
+	finger->setShowFrame(false);
+	finger->setFrameSize(0.05);
+	finger->setLocalPos(0.0, 0.0, 0.0);
 
+	thumb = new chai3d::cMultiMesh(); //create the thumb
+	world->addChild(thumb);
+	thumb->setShowFrame(false);
+	thumb->setFrameSize(0.05);
+	thumb->setLocalPos(0, 0, 0);
+
+	// load an object file
+	if (cLoadFileOBJ(finger, "../Resources/FingerModel.obj")) {
+		cout << "Finger file loaded." << endl;
+	}
+	else {
+		cout << "Failed to load finger model." << endl;
+	}
+	if (cLoadFileOBJ(thumb, "../Resources/FingerModelThumb.obj")) {
+		cout << "Thumb file loaded." << endl;
+	}
+
+	// set params for finger
+	finger->scale(7);
+	finger->setShowEnabled(true);
+	finger->setUseVertexColors(true);
+	chai3d::cColorf fingerColor;
+	fingerColor.setBrownSandy();
+	finger->setVertexColor(fingerColor);
+	finger->m_material->m_ambient.set(0.1, 0.1, 0.1);
+	finger->m_material->m_diffuse.set(0.3, 0.3, 0.3);
+	finger->m_material->m_specular.set(1.0, 1.0, 1.0);
+	finger->setUseMaterial(true);
+	finger->setHapticEnabled(false);
+	finger->setShowFrame(true);
+
+	// set params for thumb
+	thumb->scale(7);
+	thumb->setShowEnabled(true);
+	thumb->setUseVertexColors(true);
+	chai3d::cColorf thumbColor;
+	thumbColor.setBrownSandy();
+	thumb->setVertexColor(thumbColor);
+	thumb->m_material->m_ambient.set(0.1, 0.1, 0.1);
+	thumb->m_material->m_diffuse.set(0.3, 0.3, 0.3);
+	thumb->m_material->m_specular.set(1.0, 1.0, 1.0);
+	thumb->setUseMaterial(true);
+	thumb->setHapticEnabled(false);
+	thumb->setShowFrame(true);
+
+
+}
 
 
 // main thread loop
@@ -353,18 +480,83 @@ void hapticsThread::updateHaptics(void)
 
 		// update position and orientation of tool
 		tool->updateFromDevice();
-		position = tool->m_hapticPoint->getGlobalPosGoal(); // get position and rotation of the haptic point (and delta mechanism) (already transformed from magTracker)
-		chaiMagDevice->getRotation(rotation);
-		m_curSphere0->setLocalPos(position); // set the sphere visual representation to match
-		m_curSphere0->setLocalRot(rotation);
+		//position = tool->m_hapticPoint->getGlobalPosGoal(); // get position and rotation of the haptic point (and delta mechanism) (already transformed from magTracker)
+		//chaiMagDevice->getRotation(rotation);
+		//m_curSphere0->setLocalPos(position); // set the sphere visual representation to match
+		//m_curSphere0->setLocalRot(rotation);
 		//cout << position << endl;
-
+		
 		// compute interaction forces
 		tool->computeInteractionForces();
 
-		// send forces to haptic device
-		tool->applyToDevice();
-		cout << tool->m_interactionNormal << endl;
+		/*
+		// https://github.com/aleeper/ros_haptics/blob/master/chaifork3/modules/ODE/examples/GLUT/40-ODE-cube/40-ODE-cubic.cpp 
+		// for each interaction point of the tool we look for any contact events
+		// with the environment and apply forces accordingly
+		int numInteractionPoints = tool->getNumInteractionPoints();
+		for (int i = 0; i<numInteractionPoints; i++)
+		{
+			// get pointer to next interaction point of tool
+			cHapticPoint* interactionPoint = tool->getInteractionPoint(i);
+
+			// check primary contact point if available
+			if (interactionPoint->getNumCollisionEvents() > 0)
+			{
+				cCollisionEvent* collisionEvent = interactionPoint->getCollisionEvent(0);
+
+				// given the mesh object we may be touching, we search for its owner which
+				// could be the mesh itself or a multi-mesh object. Once the owner found, we
+				// look for the parent that will point to the ODE object itself.
+				cGenericObject* object = collisionEvent->m_object->getOwner()->getOwner();
+
+				// cast to ODE object
+				cODEGenericBody* ODEobject = dynamic_cast<cODEGenericBody*>(object);
+
+				// if ODE object, we apply interaction forces
+				if (ODEobject != NULL)
+				{
+					ODEobject->addExternalForceAtPoint(-0.3 * interactionPoint->getLastComputedForce(),
+						collisionEvent->m_globalPos);
+				}
+			}
+		}
+		*/
+
+
+		/////////////////////////////////////////////////////////////////////
+		// UPDATE FINGER GRAPHICS
+		/////////////////////////////////////////////////////////////////////
+		finger->setLocalPos(tool->m_hapticPointFinger->getLocalPosProxy());
+		finger->setLocalRot(tool->getDeviceLocalRot());
+		finger->rotateAboutLocalAxisDeg(cVector3d(0, 0, 1), 180);
+		finger->rotateAboutLocalAxisDeg(cVector3d(0, 1, 0), -90);
+		//finger->rotateAboutLocalAxisDeg(cVector3d(0, 0, 1), -80);
+		thumb->setLocalPos(tool->m_hapticPointThumb->getLocalPosProxy());
+		thumb->setLocalRot(tool->getDeviceLocalRot());
+		thumb->rotateAboutLocalAxisDeg(cVector3d(0, 1, 0), -90);
+
+
+		/////////////////////////////////////////////////////////////////////
+		// SEND FORCES TO HAPTIC GRIPPER
+		/////////////////////////////////////////////////////////////////////
+		//tool->applyToDevice();
+		//cout << tool->m_interactionNormal << endl;
+		m_gripperForce = tool->getDeviceLocalForce();
+		m_gripperTorque = tool->getDeviceLocalTorque();
+		m_gripperGripForce = tool->getGripperForce();
+
+		m_gripperRot = tool->getLocalRot();
+
+		// get global coordinate forces and convert to local frame
+		m_gripperRot.mulr(tool->m_hapticPointThumb->getLastComputedForce(), m_thumbForce);
+		m_gripperRot.mulr(tool->m_hapticPointFinger->getLastComputedForce(), m_fingerForce);
+
+
+		// send to gripper object
+		m_runLock.acquire();
+		m_gripper->setForcesAndTorques(m_gripperForce, m_gripperTorque, m_gripperGripForce, m_thumbForce, m_fingerForce);
+		m_runLock.acquire();
+	
 
 		/////////////////////////////////////////////////////////////////////
 		// DYNAMIC SIMULATION
@@ -388,14 +580,11 @@ void hapticsThread::updateHaptics(void)
 			// we negate the result to obtain the opposite force that is applied on the
 			// object
 			cVector3d toolForce = -tool->getDeviceGlobalForce();
+			cVector3d force = toolForce - cProject(toolForce, v);					// compute the effective force that contributes to rotating the object.
+			cVector3d torque = cMul(v.length(), cCross(cNormalize(v), force));					// compute the resulting torque
 
-			// compute the effective force that contributes to rotating the object.
-			cVector3d force = toolForce - cProject(toolForce, v);
 
-			// compute the resulting torque
-			cVector3d torque = cMul(v.length(), cCross(cNormalize(v), force));
-
-			// compute a torque to restore the face to its original position
+			// compute a torque to restore the object to its original position
 			cVector3d dirFace = object->getLocalRot().getCol0();
 			cVector3d dirTorque = cCross(dirFace, cVector3d(0, 1, 0));
 			dirTorque.mul(3.0);
@@ -456,18 +645,20 @@ void hapticsThread::updateGraphics(void)
 	/////////////////////////////////////////////////////////////////////
 
 	//// update haptic and graphic rate data
-	//labelRates->setText(cStr(graphicRate.getFrequency(), 0) + " Hz / " +
+	// labelRates->setText(cStr(graphicRate.getFrequency(), 0) + " Hz / " +
 	//	cStr(hapticRate.getFrequency(), 0) + " Hz");
 
 	//// update position of label
 	//labelRates->setLocalPos((int)(0.5 * (width - labelRates->getWidth())), 15);
 
+	// update force rendered
+	//labelForce->setText(cStr(&m_gripperForce.x, 0) + ", " + cStr(&m_gripperForce.y, 0) + ", " + cStr(&m_gripperForce.z, 0) + " N" );
+	//labelForce->setLocalPos((int)(0.5 * (width - labelRates->getWidth())), 15);
+
 	
 	/////////////////////////////////////////////////////////////////////
 	// RENDER SCENE
 	/////////////////////////////////////////////////////////////////////
-
-	cout << " Update Graphics " << endl;
 
 	//m_worldLock.acquire();
 	// update shadow maps (if any)

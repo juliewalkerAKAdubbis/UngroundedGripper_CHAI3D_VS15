@@ -84,7 +84,6 @@ namespace chai3d {
 	gripperChaiDevice::gripperChaiDevice( unsigned int a_deviceNumber)
 	{
 		m_deviceReady = false;					// the connection to your device has not yet been established.
-		//m_gripper = a_gripper;					// connect the gripper object to the haptics thread
 
 
 		////////////////////////////////////////////////////////////////////////////
@@ -544,7 +543,7 @@ namespace chai3d {
 
 		//if (trackerNo == 0)
 		//{
-		//	frame.rotateAboutLocalAxisDeg(0, 1, 0, 9); //edit hereif change angle of finger        
+		//	frame.rotateAboutLocalAxisDeg(0, 1, 0, 9); //edit here if change angle of finger        
 
 		//}
 		//if (trackerNo == 1)
@@ -600,7 +599,7 @@ namespace chai3d {
 		// read from gripper motor encoder
 		// a_angle = encoderPosition(gripMotor);
 
-		a_angle = 0.0;  // a_angle = getGripperAngleInRadianFromMyDevice();
+		a_angle = PI/4;  // a_angle = getGripperAngleInRadianFromMyDevice();
 
 		estimateGripperVelocity(a_angle);				// estimate gripper velocity
 
@@ -663,13 +662,6 @@ namespace chai3d {
 		double tz = a_torque(2);
 
 		double gf = a_gripperForce;
-
-		// *** INSERT YOUR CODE HERE ***
-
-		m_gripper->force = a_force; //(fx, fy, fz);
-		m_gripper->torque = a_torque;
-		m_gripper->gripforce = a_gripperForce;
-
 
 
 		// exit

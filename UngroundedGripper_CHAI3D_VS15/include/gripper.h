@@ -25,6 +25,12 @@ class gripper : public cGenericHapticDevice
 
 public:
 
+	cVector3d m_force;
+	cVector3d m_torque;
+	double m_gripForce;
+	cVector3d m_thumbForce;
+	cVector3d m_fingerForce;
+
 
 	bool m_error;                           // TRUE = problem with exo while running
 	std::string m_errMessage;               // error message
@@ -52,4 +58,5 @@ public:
 	//void getState();
 
 	bool sendCommand(pantograph& pThumb, pantograph& pIndex);
+	void setForcesAndTorques(cVector3d a_force, cVector3d a_torque, double a_gripForce, cVector3d a_thumbForce, cVector3d a_fingerForce);
 };

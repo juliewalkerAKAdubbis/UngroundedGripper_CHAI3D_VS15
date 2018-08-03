@@ -103,6 +103,8 @@ void magTrackerThread::CheckTrackerPoses()
 		chai3d::cTransform returnTransform;
 		chai3d::cVector3d returnVec;
 		chai3d::cMatrix3d returnMatrix;
+		chai3d::cMatrix3d initialMatrix;
+		chai3d::cVector3d initialVec;
 		double x, y, z;
 
 		// test the reading of the magnetic tracker
@@ -113,19 +115,26 @@ void magTrackerThread::CheckTrackerPoses()
 		x = (record.x - depthOffset) / posScale;
 		y = (record.y - horizontalOffset) / posScale;
 		z = record.z / posScale;	// (record.z - heightOffset) / posScale;
-		returnVec.set(x, -y, z);	// negative to account for tracker facing other direction, flip z axis to point up 
+		initialVec.set(x, y, z);		// no transformation
+		
 		//cout << "X: " << x << "      Y: " << y << "     Z: " << z << endl;
 
-		returnMatrix.set(record.s[0][0], record.s[0][1], record.s[0][2],
+		m_magTrackerLock.acquire();
+
+		initialMatrix.set(record.s[0][0], record.s[0][1], record.s[0][2],
 			record.s[1][0], record.s[1][1], record.s[1][2],
 			record.s[2][0], record.s[2][1], record.s[2][2]);
-		returnMatrix.trans();
-		returnMatrix.rotateAboutLocalAxisDeg(0, 1, 0, 180); // for mag tracker chord facing us instead of base box
+		//returnMatrix.trans();
+		//returnMatrix.rotateAboutLocalAxisDeg(1, 0, 0, 180); // for mag tracker chord facing us instead of base box
+
+		cMatrix3d trackerInWorldFrame(1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0);
+		trackerInWorldFrame.mulr(initialMatrix, returnMatrix);		// rotate the returnMatrix to the Chai3d coordinate frame
+		trackerInWorldFrame.mulr(initialVec, returnVec);			// rotate the position into the Chai3d coordinate frame	
 
 		returnTransform.set(returnVec, returnMatrix);
 			// Pass information to chaiDevice for use in the haptics thread
-			m_magTrackerLock.acquire();
 			((chai3d::gripperChaiDevice *)(m_chaiMagDevice->get()))->poseCache = returnTransform;
+
 			m_magTrackerLock.release();
 
 	}

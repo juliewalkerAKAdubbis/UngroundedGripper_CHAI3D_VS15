@@ -85,6 +85,7 @@ int main(int argc, char* argv[])
 	glfwSetKeyCallback(H.window, keyCallback);							// set key callback
 	glfwSetWindowSizeCallback(H.window, windowSizeCallback);			// set resize callback
 
+ 
 	MT.initialize();													// initialize magnetic tracker
 	MT.pairWithHapticsThread(&H.chaiMagDevice);							// share the chaiMagDevice with the magTracker
 	

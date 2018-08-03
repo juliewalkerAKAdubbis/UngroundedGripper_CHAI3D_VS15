@@ -135,7 +135,7 @@ namespace chai3d {
 
 		//! Shared c3dofChaiDevice allocator.
 		static gripperChaiDevicePtr create(unsigned int a_deviceNumber = 0) { return (std::make_shared<gripperChaiDevice>( a_deviceNumber)); }
-
+		
 
 		//--------------------------------------------------------------------------
 		// PUBLIC METHODS:
@@ -188,23 +188,23 @@ namespace chai3d {
 		//magTrackerThread ourMagTracker;
 		int trackerNo; //start at 0
 		chai3d::cTransform pose;
-		//chai3d::cTransform otherPose;
 		chai3d::cTransform poseCache;
-		//chai3d::cTransform otherPoseCache;
 		double scaleFactor;
-		//chai3d::cVector3d otherPos;
 		chai3d::cVector3d pos;
 		chai3d::cVector3d centerPoint;
 		chai3d::cVector3d scaledCenterPoint;
 		chai3d::cVector3d scaledPos;
-		//chai3d::cVector3d scaledOtherPos;
 
 
 	protected:
 
 		// the chai device has a 3dofdevice
 		//c3DOFDevice* wearableDelta;
-		gripper* m_gripper;
+		//gripper* m_gripper;
+
+		/* instead of connecting the device to the chai device, gripperChaiDevice passes 
+		forces and torques back to the haptics thread, and the haptics thread sets the 
+		gripper forces and torques to be used in the gripper object */
 
 	};
 
