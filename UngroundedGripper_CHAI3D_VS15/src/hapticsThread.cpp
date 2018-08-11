@@ -153,13 +153,23 @@ int hapticsThread::setUpHapticDevice(void) {
 	tool = new cToolGripper(world);			// create a 3D tool and add it to the world
 	world->addChild(tool);
 	
+
 	//tool->setHapticDevice(hapticDevice);
 	tool->setHapticDevice(chaiMagDevice);		// connect the haptic device to the tool
 	toolRadius = 0.05;							// define the radius of the tool (sphere)
 	tool->setRadius(toolRadius);				// define a radius for the tool
-	tool->setShowContactPoints(true, false);		// hide the device sphere. only show proxy.
+	tool->setShowContactPoints(false, false);		// hide the device sphere. only show proxy.
+	tool->setShowFrame(false);
+	tool->setFrameSize(0.5);
+
 
 	// ADD SECOND TOOL FOR OTHER FINGER						//---------------------------------- TO DO ------------------------------------------------------//
+	//tool2 = new cToolCursor(world);
+	//world->addChild(tool2);
+	//tool2->setHapticDevice(chaiMagDevice);
+	//tool2->setRadius(toolRadius);
+	//tool2->setShowFrame(true);
+	//tool2->setFrameSize(0.5);
 
 	// enable if objects in the scene are going to rotate of translate
 	// or possibly collide against the tool. If the environment
@@ -199,16 +209,17 @@ int hapticsThread::setUpHapticDevice(void) {
 
 	//tool->m_hapticPointFinger->m_sphereProxy->addChild(m_curSphere0);
 	//tool->m_hapticPointThumb->m_sphereProxy->addChild(m_curSphere1);
+	tool->setShowEnabled(true, true);
 	tool->m_hapticPointFinger->setShow(false, false);
 	tool->m_hapticPointThumb->setShow(false, false);
-	// create a small white line that will be enabled every time the operator
-	// grasps an object. The line indicated the connection between the
-	// position of the tool and the grasp position on the object
-	graspLine = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
-	world->addChild(graspLine);
-	graspLine->m_colorPointA.set(1.0, 1.0, 1.0);
-	graspLine->m_colorPointB.set(1.0, 1.0, 1.0);
-	graspLine->setShowEnabled(false);
+	//// create a small white line that will be enabled every time the operator
+	//// grasps an object. The line indicated the connection between the
+	//// position of the tool and the grasp position on the object
+	//graspLine = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
+	//world->addChild(graspLine);
+	//graspLine->m_colorPointA.set(1.0, 1.0, 1.0);
+	//graspLine->m_colorPointB.set(1.0, 1.0, 1.0);
+	//graspLine->setShowEnabled(false);
 
 	loadFingerMeshes();
 	return 0;
@@ -382,15 +393,15 @@ void hapticsThread::loadFingerMeshes(void) {
 	// FINGER MESHES
 	//--------------------------------------------------------------------------
 	finger = new chai3d::cMultiMesh(); // create the finger
-	world->addChild(finger);
-	finger->setShowFrame(false);
-	finger->setFrameSize(0.05);
+	world->addChild(finger);	
+	finger->setShowFrame(true);			// show axes if desired
+	finger->setFrameSize(0.5);			
 	finger->setLocalPos(0.0, 0.0, 0.0);
 
 	thumb = new chai3d::cMultiMesh(); //create the thumb
 	world->addChild(thumb);
-	thumb->setShowFrame(false);
-	thumb->setFrameSize(0.05);
+	thumb->setShowFrame(true);		// show axes if desired
+	thumb->setFrameSize(0.5);
 	thumb->setLocalPos(0, 0, 0);
 
 	// load an object file
@@ -529,12 +540,15 @@ void hapticsThread::updateHaptics(void)
 		finger->setLocalPos(tool->m_hapticPointFinger->getLocalPosProxy());
 		finger->setLocalRot(tool->getDeviceLocalRot());
 		finger->rotateAboutLocalAxisDeg(cVector3d(0, 0, 1), 180);
-		finger->rotateAboutLocalAxisDeg(cVector3d(0, 1, 0), -90);
-		//finger->rotateAboutLocalAxisDeg(cVector3d(0, 0, 1), -80);
+		finger->rotateAboutLocalAxisDeg(cVector3d(0, 1, 0), 90);
+		//thumb->rotateAboutLocalAxisDeg(cVector3d(0, 0, 1), tool->getGripperAngleDeg());
+		// //finger->rotateAboutLocalAxisDeg(cVector3d(0, 0, 1), -80);
 		thumb->setLocalPos(tool->m_hapticPointThumb->getLocalPosProxy());
 		thumb->setLocalRot(tool->getDeviceLocalRot());
 		thumb->rotateAboutLocalAxisDeg(cVector3d(0, 1, 0), -90);
-
+		//thumb->rotateAboutLocalAxisDeg(cVector3d(0, 0, 1), -(tool->getGripperAngleDeg()));
+		
+		//tool->m_hapticPointFinger->setShow(true);
 
 		/////////////////////////////////////////////////////////////////////
 		// SEND FORCES TO HAPTIC GRIPPER

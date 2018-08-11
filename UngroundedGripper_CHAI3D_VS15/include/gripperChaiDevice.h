@@ -186,7 +186,6 @@ namespace chai3d {
 		*/
 		////////////////////////////////////////////////////////////////////////////
 		//magTrackerThread ourMagTracker;
-		int trackerNo; //start at 0
 		chai3d::cTransform pose;
 		chai3d::cTransform poseCache;
 		double scaleFactor;

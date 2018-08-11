@@ -28,44 +28,34 @@ public:
 	//bool m_pantographReady;
 
 
+	// arm lengths: upper left, bottom left, bottom right, upper right, top bar
+	double len[5] = { 13, 11, 11, 13, 15 };		// CORRECT THESE TO MATCH DEVCIE
+	double center[2] = { PI / 2, PI / 2 };
 
-	double lengths[5];	// upper left, bottom left, bottom right, upper right, top bar
 	double m_finger;		// index or thumb (mirrored x position values)
 
 	chai3d::cVector3d m_th;                 // current joint angles [rad]
 	chai3d::cVector3d m_thDes;              // desired joint angles [rad]
-	chai3d::cVector3d m_thErr;              // joint-angle error [rad]
-	chai3d::cVector3d m_thdot;              // current joint velocities [rad/s]
-	chai3d::cVector3d m_thdotDes;           // desired joint velocities [rad/s]
-	chai3d::cVector3d m_thdotErr;           // joint-velocity error [rad/s]
-	chai3d::cVector3d m_thErrInt;           // integrated joint angle error [rad*s]
-	chai3d::cVector3d m_pos;                // current end-effector position [m]
 	chai3d::cVector3d m_posDes;             // desired end-effector position [m]
-	chai3d::cVector3d m_posErr;             // end-effector position error [m]
-	chai3d::cVector3d m_vel;                // current end-effector linear velocity [m/s]
-	chai3d::cVector3d m_velDes;             // desired end-effector linear velocity [m/s]
-	chai3d::cVector3d m_velErr;             // end-effector velocity error [m/s]
-	chai3d::cVector3d m_posErrInt;          // integrated end-effector position error [m*s]
-	
+
 
 	chai3d::cMutex m_pantographLock;
-	chai3d::cVector3d m_Kp;
-	chai3d::cVector3d m_Kd;
-	chai3d::cVector3d m_Ki;
 
-	pantograph(fingers a_finger);
+
+	pantograph();
 	~pantograph();
 
 //	void getState();
-	bool sendCommand();
+	void setPos(chai3d::cVector3d a_force); // double a_x, double a_y);
 
 //	chai3d::cVector3d forwardKin(chai3d::cVector3d a_th);
 //	chai3d::cVector3d inverseKin(chai3d::cVector3d a_pos);
 
 protected:
+	double k_skin = 10;				// scale force to skin displacement
 	bool m_pantographAvailable;            // TRUE = exoskeleton instance has been created
 	bool m_pantographReady;                // TRUE = connection to exoskeleton successful
-
+	void inverseKinematics();
 //	chai3d::cVector3d getAngles();
 //	chai3d::cMatrix3d Jacobian(chai3d::cVector3d a_th);
 	double angleDiff(double a_thA, double a_thB);

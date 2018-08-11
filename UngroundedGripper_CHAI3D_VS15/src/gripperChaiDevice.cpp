@@ -97,7 +97,7 @@ namespace chai3d {
 		*/
 		////////////////////////////////////////////////////////////////////////////
 
-		trackerNo = a_deviceNumber;
+		//trackerNo = a_deviceNumber;
 		//--------------------------------------------------------------------------
 		// NAME:
 		//--------------------------------------------------------------------------
@@ -467,22 +467,13 @@ namespace chai3d {
 		//cout << "x: " << x1 << "      y: " << y1 << "     z: " << z1 << endl;
 
 		// transformation to go from mag tracker at back, to at finger tip (x red, y green, z blue)
-		chai3d::cVector3d posOffsetinB;
-		if (trackerNo == 0)
-		{
-			posOffsetinB.set(-.060, 0, .019);
-		}
+		chai3d::cVector3d posOffsetinH;
+		posOffsetinH.set(-0.01, 0, .019);		//(-.060, 0, .019);
 
-		if (trackerNo == 1)
-		{
-			// Tilted harness
-			posOffsetinB.set(-.068, 0, .014); //large tilted thumb
-											  //posOffsetinB.set(-.06413, 0, .014); //small tilted thumb
-		}
 
 		chai3d::cMatrix3d R_BtoA = pose.getLocalRot();
 		chai3d::cVector3d posOffsetinA;
-		R_BtoA.mulr(posOffsetinB, posOffsetinA);
+		R_BtoA.mulr(posOffsetinH, posOffsetinA);
 		a_position = a_position + posOffsetinA;
 
 		// estimate linear velocity
@@ -539,6 +530,7 @@ namespace chai3d {
 		// try setting rotation from mag tracker
 		frame = poseCache.getLocalRot();
 #endif
+		// IF YOU NEED TO TRANSFORM BETWEEN TRACKER AND FINGERS FRAMES
 		//double thumbTrackerTilt = 15;
 
 		//if (trackerNo == 0)
@@ -560,7 +552,6 @@ namespace chai3d {
 
 		// store new rotation matrix
 		a_rotation = frame;
-
 		// estimate angular velocity
 		estimateAngularVelocity(a_rotation);
 
@@ -599,7 +590,7 @@ namespace chai3d {
 		// read from gripper motor encoder
 		// a_angle = encoderPosition(gripMotor);
 
-		a_angle = PI/4;  // a_angle = getGripperAngleInRadianFromMyDevice();
+		a_angle = PI / 4;  // a_angle = getGripperAngleInRadianFromMyDevice();
 
 		estimateGripperVelocity(a_angle);				// estimate gripper velocity
 

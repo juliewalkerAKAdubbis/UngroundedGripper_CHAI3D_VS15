@@ -4,7 +4,7 @@ using namespace std;
 using namespace chai3d;
 
 
-pantograph::pantograph(fingers a_finger) {
+pantograph::pantograph() {
 
 	// exoskeleton available for connection
 	m_pantographAvailable = true;
@@ -12,29 +12,14 @@ pantograph::pantograph(fingers a_finger) {
 	m_error = false;
 	m_errMessage = "";
 
-	m_finger = a_finger;
+	//m_finger = a_finger;
+	
 
 	// initialize kinematic variables
 	m_t = 0;
 	m_th = cVector3d(0.0, 0.0, 0.0);
 	m_thDes = cVector3d(0.0, 0.0, 0.0);
-	m_thErr = cVector3d(0.0, 0.0, 0.0);
-	m_thdot = cVector3d(0.0, 0.0, 0.0);
-	m_thdotDes = cVector3d(0.0, 0.0, 0.0);
-	m_thdotErr = cVector3d(0.0, 0.0, 0.0);
-	m_thErrInt = cVector3d(0.0, 0.0, 0.0);
-	m_pos = cVector3d(0.0, 0.0, 0.0);
-	m_posDes = cVector3d(0.0, 0.0, 0.0);
-	m_posErr = cVector3d(0.0, 0.0, 0.0);
-	m_vel = cVector3d(0.0, 0.0, 0.0);
-	m_velDes = cVector3d(0.0, 0.0, 0.0);
-	m_velErr = cVector3d(0.0, 0.0, 0.0);
-	m_posErrInt = cVector3d(0.0, 0.0, 0.0);
 
-	// initialize control variables
-	m_Kp = cVector3d{ 1.0, 1.0, 1.0 };
-	m_Kd = cVector3d{ 1.0, 1.0, 1.0 };
-	m_Ki = cVector3d{ 1.0, 1.0, 1.0 };
 
 }
 
@@ -42,11 +27,56 @@ pantograph::~pantograph(void) {
 	//set all motors to zero 
 }
 
-bool pantograph::sendCommand(void) {
 
-	// ......................... TO DO ................................ //
-	return(C_SUCCESS);
+void pantograph::setPos(cVector3d a_force){		//double a_x, double a_z) {
+	m_posDes.x(a_force.x() / k_skin);
+	m_posDes.z(a_force.z() / k_skin);
+	inverseKinematics();
 }
+
+void pantograph::inverseKinematics() {
+	//calculate desired angles from matlab code
+	double xx = m_posDes.x();
+	double yy = m_posDes.z();
+
+	// Distances to point from each motor hub
+	//double P1P3 = sqrt( (double)(m_pos.x)*(double)(m_pos.x) + (double)(m_pos.z)*(double)(m_pos.z));
+	double P1P3 = sqrt(xx*xx + yy*yy);
+	double P5P3 = sqrt((xx + len[4])*(xx + len[4]) + yy*yy);
+	if ((P1P3 > (len[0] + len[1])) || (P5P3 > (len[3] + len[2]))) {	// longer than length of arms
+		cout << "Pantograph " << m_finger << " out of workspace" << endl;
+		m_thDes.set(center[0], center[1], 0.0);		// center pantograph point
+		return;
+	}
+
+	// intermediate terms
+	double alpha1 = acos((len[1] * len[1] - len[0] * len[0] - P1P3*P1P3) / (-2 * len[0] * P1P3));
+	if (alpha1 < 0) {
+		cout << "Pantograph" << m_finger << " bad configuration, alpha1 < 0" << endl;
+		m_thDes.set(center[0], center[1], 0.0);		// center pantograph point
+		return;
+	}
+
+		double beta1 = atan2(yy, -xx);
+	double beta5 = acos((len[2]*len[2] - len[3]*len[3] - P5P3*P5P3) / (-2 * len[3] * P5P3));
+
+	if(beta5 < 0){
+		cout << "Pantograph" << m_finger << " bad configuration, beta5 < 0" << endl;
+		m_thDes.set(center[0], center[1], 0.0);		// center pantograph point
+		return;
+	}
+		double alpha5 = atan2(yy, xx + len[4]);
+
+		// set angles in thDes
+		m_thDes.set(PI - alpha1 - beta1, alpha5 + beta5, 0.0);
+
+}
+
+
+
+
+
+
 
 double pantograph::angleDiff(double a_thA, double a_thB)
 {
@@ -68,3 +98,4 @@ cVector3d pantograph::vecDiff(cVector3d a_vecA, cVector3d a_vecB)
 	}
 	return diff;
 }
+

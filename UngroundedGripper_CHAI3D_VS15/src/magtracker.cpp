@@ -96,7 +96,7 @@ void magTrackerThread::CheckTrackerPoses()
 	for (int tracker = 0; tracker < NUM_TRACKERS; tracker = tracker + 1)
 	{
 		double posScale = 1000.0;
-		double depthOffset = 130;
+		double depthOffset = 0; // 130;
 		double heightOffset = 0;
 		double horizontalOffset = 0; // -100;
 
@@ -124,12 +124,22 @@ void magTrackerThread::CheckTrackerPoses()
 		initialMatrix.set(record.s[0][0], record.s[0][1], record.s[0][2],
 			record.s[1][0], record.s[1][1], record.s[1][2],
 			record.s[2][0], record.s[2][1], record.s[2][2]);
-		//returnMatrix.trans();
-		//returnMatrix.rotateAboutLocalAxisDeg(1, 0, 0, 180); // for mag tracker chord facing us instead of base box
+		//initialMatrix.trans();
 
+
+		cMatrix3d gripperInBirdFrame(1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0);
 		cMatrix3d trackerInWorldFrame(1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0);
-		trackerInWorldFrame.mulr(initialMatrix, returnMatrix);		// rotate the returnMatrix to the Chai3d coordinate frame
+		cMatrix3d gripperInTrackerFrame;
+
+		initialMatrix.mulr(gripperInBirdFrame, gripperInTrackerFrame);
+		trackerInWorldFrame.mulr(gripperInTrackerFrame, returnMatrix);		// rotate the returnMatrix to the Chai3d coordinate frame
+
+		//trackerInWorldFrame.mulr(initialMatrix, returnMatrix);
 		trackerInWorldFrame.mulr(initialVec, returnVec);			// rotate the position into the Chai3d coordinate frame	
+
+		//returnMatrix.rotateAboutLocalAxisDeg(0, 0, 1, 180); // for mag tracker chord facing us instead of base box
+		//returnMatrix.rotateAboutLocalAxisDeg(1, 0, 0, 180); // for tracker being upside down
+		//returnMatrix.identity();
 
 		returnTransform.set(returnVec, returnMatrix);
 			// Pass information to chaiDevice for use in the haptics thread

@@ -49,11 +49,14 @@ void windowSizeCallback(GLFWwindow* a_window, int a_width, int a_height);
 void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, int a_mods);
 void hapticThreadHandler(void);
 void magTrackerThreadHandler(void);
+void motorThreadHandler(void);
 
 // Thread Setup
 hapticsThread H;					// haptics thread object
 cThread* haptics_thread;			// haptic and graphics update thread
 cThread* motor_thread;				// motor controller
+
+gripper* G; // = new gripper();											// create a gripper instance
 
 magTrackerThread MT(0);
 cThread* magTracker_thread;			// magnetic tracker
@@ -78,14 +81,26 @@ int main(int argc, char* argv[])
 	// parse first arg to try and locate resources
 	resourceRoot = string(argv[0]).substr(0, string(argv[0]).find_last_of("/\\") + 1);
 			
-	gripper* G = new gripper();															// create a gripper instance
+//	gripper* G = new gripper();											// create a gripper instance
+	G = new gripper();
+	if (!G->connect()) {
+		cout << "Failed to connect to Gripper." << endl;
+	}
+	if (G->calibrate()) {
+		cout << "Gripper Calibrated" << endl;
+	}
+	else {
+		cout << "Failed to Calibrate Gripper" << endl; 
+	}
+
 	H.pairWithGripper(G);												// pair with haptics thread
 		
+	// set up hapticsThread object and keyboard and window callbacks
 	H.initialize();														// set up all chai3D and haptic tool stuff
 	glfwSetKeyCallback(H.window, keyCallback);							// set key callback
 	glfwSetWindowSizeCallback(H.window, windowSizeCallback);			// set resize callback
 
- 
+	// magnetic tracker setup
 	MT.initialize();													// initialize magnetic tracker
 	MT.pairWithHapticsThread(&H.chaiMagDevice);							// share the chaiMagDevice with the magTracker
 	
@@ -97,6 +112,12 @@ int main(int argc, char* argv[])
 	haptics_thread = new cThread();
 	haptics_thread->start(hapticThreadHandler, CTHREAD_PRIORITY_HAPTICS);
 
+	// start the motor thread (setup via gripper object during haptics_thread initialization)
+	motor_thread = new cThread();
+	motor_thread->start(motorThreadHandler, CTHREAD_PRIORITY_HAPTICS);
+
+
+
 	// setup callback when application exits
 	atexit(close);
 
@@ -106,7 +127,7 @@ int main(int argc, char* argv[])
 	{
 		glfwGetWindowSize(H.window, &H.width, &H.height);			// get width and height of window
 		H.updateGraphics();			// render graphics
-		glfwSwapBuffers(H.window);		// swap buffers				////////////////////// FIX: THROWS EXCEPTION /////////////////////////////////////
+		glfwSwapBuffers(H.window);		// swap buffers				
 		glfwPollEvents();			// process events
 		//H.graphicRate.signal(1);			// signal frequency counter
 	}
@@ -221,6 +242,10 @@ void magTrackerThreadHandler() {
 	MT.m_magTrackerLock.acquire();
 	MT.run();
 	MT.m_magTrackerLock.release();
+}
+
+void motorThreadHandler() {
+	G->motorLoop();
 }
 
 void close(void)

@@ -1,6 +1,6 @@
 #include "motorcontrol.h"
-
-#define PCI_BOARD 0           // only 1 826 board (number follows dip-switch code from manual section 2.2)
+// --------------- TO DO ------------- SET ALL THESE VALUES -------------
+#define PCI_BOARD 15           // only 1 826 board (number follows dip-switch code from manual section 2.2)
 #define MODE_ENC  0x00000070  // for quadrature-encoded device using x4 clock multiplier
 #define MODE_SNP  0x00000010  // automatically trigger counter snapshot on index pulse
 #define QUAD_ERR  0x00000100  // counter snapshot triggered because of quadrature error
@@ -8,16 +8,16 @@
 #define MAXCOUNT  0xFFFFFFFF  // maximum number of counts for 32-bit counter channel
 #define MTR_RUN   0           // flag for motors to be operating normally
 #define MTR_SAFE  1           // flag for motors to be in "safe" mode
-#define DB0_LO   -0.33        // lower bound of deadband for motor 0 [V]
-#define DB0_HI    0.34        // upper bound of deadband for motor 0 [V]
-#define DB1_LO   -0.36        // lower bound of deadband for motor 1 [V]
-#define DB1_HI    0.29        // upper bound of deadband for motor 1 [V]
-#define VOLTRANGE 3           // output voltage range (2 = -5 to 5V, 3 = -10 to 10V)
+#define VOLTRANGE 2           // output voltage range (2 = -5 to 5V, 3 = -10 to 10V)
 #define MAXSETPNT 0xFFFF      // maximum analog output level (0x0000 to 0xFFFF covers output voltage range)
 #define CNTPERREV 500         // Maxon HEDL5540 resolution [cnts/rev]
 #define K_TORQ    0.127       // Maxon RE65 torque constant [N*m/A]
-#define I_MAX     25          // maximum current output by AMC 25A20 amplifier [A]
-#define V_TO_I    3.1         // AMC 25A20 amplifier gain in current mode, tuned [A/V] (derived experimentally)
+#define I_MAX     1			  // maximum current rating of motors [A]
+#define VMAX	1			// maximum safe voltage for motors
+#define VMIN	-1			//minimum safe voltage for motors
+#define V_TO_I	 .1			  // amplifier gain
+#define VRANGE_LOW -5
+#define VRANGE_HI 5
 #define PI        3.141592
 #define DEBUG     0
 
@@ -104,46 +104,23 @@ bool checkEncod(uint channel)
 
 void setVolts(uint channel, double V)
 {
-    // check commanded voltage against set range
-    static double Vmax;
-    static double Vmin;
-    if (VOLTRANGE == 2) {
-        Vmax = 5.0;
-        Vmin = -5.0;
-    } else {
-        Vmax = 10.0;
-        Vmin = -10.0;
-    }
-    if(V > Vmax)  V = Vmax;
-    if(V < Vmin)  V = Vmin;
-
-    // adjust V to account for motor deadband
-    double Vdb_lo;
-    double Vdb_hi;
-    if (channel == 0) {
-        Vdb_lo = DB0_LO;
-        Vdb_hi = DB0_HI;
-    } else if (channel == 1) {
-        Vdb_lo = DB1_LO;
-        Vdb_hi = DB1_HI;
-    } else {
-        Vdb_lo = 0.0;
-        Vdb_hi = 0.0;
-    }
-
-    if      (V > 0) V = Vdb_hi + (V/Vmax)*(Vmax - Vdb_hi);
-    else if (V < 0) V = Vdb_lo + (V/Vmin)*(Vmin + Vdb_lo);
-    else            V = 0;
+    // check commanded voltage against dafe range
+	if (channel != 4) {
+		if (V > VMAX)  V = VMAX;
+		if (V < VMIN)  V = VMIN;
+	}
 
     // map voltage range to [0x0000,0xFFFF]
-    uint setpnt = (V-Vmin)/(Vmax-Vmin) * MAXSETPNT;
+    uint setpnt = (V-VRANGE_LOW)/(VRANGE_HI-VRANGE_LOW) * MAXSETPNT;
     S826_DacDataWrite(PCI_BOARD, channel, setpnt, MTR_RUN);
 }
+
+
 
 void setTorque(uint channel, double T)
 {
     // convert desired torque to (approximate) command voltage
-    double I = T / K_TORQ;
+    double I = T / K_TORQ;						// ------ TO DO -------
     if (fabs(I) > I_MAX) I = I_MAX;
     double V = I / V_TO_I;
     setVolts(channel, V);
@@ -193,4 +170,16 @@ double getAngle(uint channel, int zero)
 	if (DEBUG) cout << "Mtr #" << channel << " = " << angle*(180 / PI) << " deg" << endl;
 
     return angle;
+}
+
+double angleDiff(double a_thA, double a_thB)
+{
+	// determine shortest distance between A and B
+	double diff1 = fabs(a_thA - a_thB);
+	double diff2 = 2 * PI - diff1;
+	double diff = fmin(diff1, diff2);
+
+	// determine direction for moving from B to A along shortest path
+	if (abs(fmod(a_thB + diff, 2 * PI) - a_thA) < THRESH)  return  1.0*diff;
+	else                                                 return -1.0*diff;
 }

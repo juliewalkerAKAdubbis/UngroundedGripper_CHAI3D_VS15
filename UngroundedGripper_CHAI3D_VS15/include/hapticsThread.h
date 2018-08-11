@@ -113,6 +113,7 @@ public:
 	cHapticDeviceHandler* handler;			// a haptic device handler
 	cGenericHapticDevicePtr hapticDevice;	// a pointer to the current haptic device
 	cToolGripper* tool;						// a virtual tool representing the haptic device in the scene
+	cToolCursor* tool2;						// for testing
 	gripper* m_gripper;						// the member gripper instantiation
 	cMatrix3d m_gripperRot;
 	cMultiMesh* finger;
