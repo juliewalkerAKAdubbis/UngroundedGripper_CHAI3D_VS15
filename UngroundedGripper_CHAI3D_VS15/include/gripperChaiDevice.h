@@ -54,6 +54,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "devices/CGenericHapticDevice.h"
 #include "magtracker.h"
 #include "gripper.h"
+#include <algorithm>
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -200,6 +201,8 @@ namespace chai3d {
 		// the chai device has a 3dofdevice
 		//c3DOFDevice* wearableDelta;
 		//gripper* m_gripper;
+
+		double gripperStartAngle = 0; // PI / 4;
 
 		/* instead of connecting the device to the chai device, gripperChaiDevice passes 
 		forces and torques back to the haptics thread, and the haptics thread sets the 

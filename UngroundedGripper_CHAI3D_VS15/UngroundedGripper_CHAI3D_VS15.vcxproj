@@ -85,13 +85,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;../../external/chai3d-3.2.0/modules/ODE/src;../../external\chai3d-3.2.0\modules\ODE\external\ODE\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;../../external\chai3d-3.2.0\modules\ODE\lib\$(Configuration)\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;chai3d-ODE.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -100,13 +100,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;../../external/chai3d-3.2.0/modules/ODE/src;../../external\chai3d-3.2.0\modules\ODE\external\ODE\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PreprocessorDefinitions>WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;../../external\chai3d-3.2.0\modules\ODE\lib\$(Configuration)\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;chai3d-ODE.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -117,15 +117,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;../../external/chai3d-3.2.0/modules/ODE/src;../../external\chai3d-3.2.0\modules\ODE\external\ODE\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;../../external\chai3d-3.2.0\modules\ODE\lib\$(Configuration)\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;chai3d-ODE.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -136,15 +136,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../external\chai3d-3.2.0\src\math;../../external\s826_3.3.9\api;../../external/chai3d-3.2.0/src;../../external/chai3d-3.2.0/external/Eigen;../../external/chai3d-3.2.0/external/glew/include;../../external/chai3d-3.2.0/extras/GLFW/include;include;../../external\3DG API Developer\3DG API;.../../external\chai3d-3.2.0\extras\freeglut\include;../..\external\3DG API Developer\Binaries;../../external/chai3d-3.2.0/modules/ODE/src;../../external\chai3d-3.2.0\modules\ODE\external\ODE\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PreprocessorDefinitions>WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../external\3DG API Developer\3DG API;../../external/chai3d-3.2.0/lib/$(Configuration)/$(Platform);../../external\chai3d-3.2.0\extras\GLFW\lib\$(Configuration)/$(Platform);../../external\s826_3.3.9\api\x32;../../external\chai3d-3.2.0\modules\ODE\lib\$(Configuration)\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw.lib;OpenGL32.lib;glu32.lib;chai3d.lib;s826.lib;ATC3DG.lib;chai3d-ODE.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>

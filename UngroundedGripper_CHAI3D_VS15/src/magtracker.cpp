@@ -10,32 +10,22 @@ magTrackerThread::~magTrackerThread()
 	trackingOn = false;
 }
 
-void magTrackerThread::run()
-{
-	while(trackingOn)
-	{
-		if (runTimer.timeoutOccurred())
-		{
-			m_magTrackerLock.acquire();
-			CheckTrackerPoses();
-			m_magTrackerLock.release();
-			runTimer.reset();
-			runTimer.start();
-		}
-	}
+void magTrackerThread::pairWithHapticsThread(chai3d::cGenericHapticDevicePtr *a_chaiMagDevice) {
+	m_chaiMagDevice = a_chaiMagDevice;
+
 }
 
-void magTrackerThread::initialize()
+void magTrackerThread::initMagTracker()
 {
 	trackingOn = true;
 	runTimer.setTimeoutPeriodSeconds(0.002);
 
 #ifdef MAGTRACKER
 	// initialize the magnetic tracker
-	cout << "Initializing the ATC3DG system...\n" << endl;
+	std::cout << "Initializing the ATC3DG system...\n" << std::endl;
 	errorCode = InitializeBIRDSystem();
 	if (errorCode == BIRD_ERROR_SUCCESS) {
-		cout << "Initialized ATC3DG system\n" << endl;
+		std::cout << "Initialized ATC3DG system\n" << std::endl;
 	}
 
 	// get configurations
@@ -45,14 +35,14 @@ void magTrackerThread::initialize()
 	{
 		errorCode = GetSensorConfiguration(i, &pSensor[i].m_config);
 		if (errorCode != BIRD_ERROR_SUCCESS) errorHandler(errorCode);
-		cout << "Got sensors configuration\n" << endl;
+		std::cout << "Got sensors configuration\n" << std::endl;
 	}
 	pXmtr = new CXmtr[ATC3DG.m_config.numberTransmitters];
 	for (i = 0; i<ATC3DG.m_config.numberTransmitters; i++)
 	{
 		errorCode = GetTransmitterConfiguration(i, &pXmtr[i].m_config);
 		if (errorCode != BIRD_ERROR_SUCCESS) errorHandler(errorCode);
-		cout << "Got transmitters configuration\n" << endl;
+		std::cout << "Got transmitters configuration\n" << std::endl;
 	}
 
 	measFreq = 80.0;
@@ -89,15 +79,32 @@ void magTrackerThread::initialize()
 	runTimer.start();
 }
 
-void magTrackerThread::CheckTrackerPoses()
+
+void magTrackerThread::run()
+{
+	while(trackingOn)
+	{
+		if (runTimer.timeoutOccurred())
+		{
+			m_magTrackerLock.acquire();
+			CheckTrackerPose();
+			m_magTrackerLock.release();
+			runTimer.reset();
+			runTimer.start();
+		}
+	}
+}
+
+
+void magTrackerThread::CheckTrackerPose()
 {
 #ifdef MAGTRACKER
 	// change to <= 1 if we want to use both trackers
-	for (int tracker = 0; tracker < NUM_TRACKERS; tracker = tracker + 1)
+	for (int tracker = 0; tracker < NUM_TRACKERS; tracker++)
 	{
 		double posScale = 1000.0;
-		double depthOffset = 0; // 130;
-		double heightOffset = 0;
+		double depthOffset = 150; // 130;
+		double heightOffset = 200;
 		double horizontalOffset = 0; // -100;
 
 		chai3d::cTransform returnTransform;
@@ -112,27 +119,43 @@ void magTrackerThread::CheckTrackerPoses()
 		if (errorCode != BIRD_ERROR_SUCCESS) { errorHandler(errorCode); }
 		// get the status of the last data record
 		// only report the data if everything is okay
+
 		x = (record.x - depthOffset) / posScale;
 		y = (record.y - horizontalOffset) / posScale;
-		z = record.z / posScale;	// (record.z - heightOffset) / posScale;
+		z = (record.z - heightOffset) / posScale;
 		initialVec.set(x, y, z);		// no transformation
 		
 		//cout << "X: " << x << "      Y: " << y << "     Z: " << z << endl;
 
-		m_magTrackerLock.acquire();
 
 		initialMatrix.set(record.s[0][0], record.s[0][1], record.s[0][2],
 			record.s[1][0], record.s[1][1], record.s[1][2],
 			record.s[2][0], record.s[2][1], record.s[2][2]);
-		//initialMatrix.trans();
+		initialMatrix.trans();
+		initialMatrix.rotateAboutLocalAxisDeg(0, 0, 1, 180); // for mag tracker chord facing us instead of base box
 
+		returnTransform.set(initialVec, initialMatrix);
 
-		cMatrix3d gripperInBirdFrame(1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0);
+		/*********************************************************
+		
+		returnMatrix = initialMatrix;
+		returnMatrix.trans();
+		returnMatrix.rotateAboutLocalAxisDeg(0, 1, 0, 180); // for mag tracker chord facing us instead of base box
+		returnTransform.set(initialVec, returnMatrix);
+		
+		/******************************/
+	/*	cMatrix3d gripperInBirdFrame(1.0, 0.0, 0.0,
+									0.0, -1.0, 0.0,
+									0.0, 0.0, -1.0); 
 		cMatrix3d trackerInWorldFrame(1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0);
 		cMatrix3d gripperInTrackerFrame;
 
-		initialMatrix.mulr(gripperInBirdFrame, gripperInTrackerFrame);
-		trackerInWorldFrame.mulr(gripperInTrackerFrame, returnMatrix);		// rotate the returnMatrix to the Chai3d coordinate frame
+		7//initialMatrix.mulr(gripperInBirdFrame, gripperInTrackerFrame);
+		//trackerInWorldFrame.mulr(gripperInTrackerFrame, returnMatrix);		// rotate the returnMatrix to the Chai3d coordinate frame
+
+		//initialMatrix.mulr(gripperInBirdFrame, gripperInTrackerFrame);
+		trackerInWorldFrame.mulr(initialMatrix, returnMatrix);		// rotate the returnMatrix to the Chai3d coordinate frame
+
 
 		//trackerInWorldFrame.mulr(initialMatrix, returnMatrix);
 		trackerInWorldFrame.mulr(initialVec, returnVec);			// rotate the position into the Chai3d coordinate frame	
@@ -142,18 +165,17 @@ void magTrackerThread::CheckTrackerPoses()
 		//returnMatrix.identity();
 
 		returnTransform.set(returnVec, returnMatrix);
+
+		***************************/
+			
+			
+			
 			// Pass information to chaiDevice for use in the haptics thread
-			((chai3d::gripperChaiDevice *)(m_chaiMagDevice->get()))->poseCache = returnTransform;
-
-			m_magTrackerLock.release();
-
+		m_magTrackerLock.acquire();
+		((chai3d::gripperChaiDevice *)(m_chaiMagDevice->get()))->poseCache = returnTransform;
+		m_magTrackerLock.release();
 	}
 
 #endif
-}
-
-void magTrackerThread::pairWithHapticsThread(chai3d::cGenericHapticDevicePtr *a_chaiMagDevice) {
-	m_chaiMagDevice = a_chaiMagDevice;
-
 }
 

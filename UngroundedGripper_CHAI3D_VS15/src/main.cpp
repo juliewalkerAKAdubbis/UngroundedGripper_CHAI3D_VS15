@@ -54,7 +54,7 @@ void motorThreadHandler(void);
 // Thread Setup
 hapticsThread H;					// haptics thread object
 cThread* haptics_thread;			// haptic and graphics update thread
-cThread* motor_thread;				// motor controller
+//cThread* motor_thread;				// motor controller
 
 gripper* G; // = new gripper();											// create a gripper instance
 
@@ -63,18 +63,15 @@ cThread* magTracker_thread;			// magnetic tracker
 
 int main(int argc, char* argv[])
 {
-	cout << endl;
+	
 	cout << "-----------------------------------" << endl;
 	cout << "CHAI3D" << endl;
 	cout << "Demo: 22-chrome" << endl;
 	cout << "Copyright 2003-2016" << endl;
 	cout << "-----------------------------------" << endl << endl << endl;
 	cout << "Keyboard Options:" << endl << endl;
-	cout << "[1] - Texture   (ON/OFF)" << endl;
-	cout << "[2] - Wireframe (ON/OFF)" << endl;
-	cout << "[3] - Normals   (ON/OFF)" << endl;
 	cout << "[f] - Enable/Disable full screen mode" << endl;
-	cout << "[m] - Enable/Disable vertical mirroring" << endl;
+	cout << "[g] - Gravity   (ON/OFF)" << endl;
 	cout << "[q] - Exit application" << endl;
 	cout << endl << endl;
 
@@ -86,6 +83,7 @@ int main(int argc, char* argv[])
 	if (!G->connect()) {
 		cout << "Failed to connect to Gripper." << endl;
 	}
+	G->disableCtrl();
 	if (G->calibrate()) {
 		cout << "Gripper Calibrated" << endl;
 	}
@@ -100,21 +98,23 @@ int main(int argc, char* argv[])
 	glfwSetKeyCallback(H.window, keyCallback);							// set key callback
 	glfwSetWindowSizeCallback(H.window, windowSizeCallback);			// set resize callback
 
+	#ifdef MAGTRACKER
 	// magnetic tracker setup
-	MT.initialize();													// initialize magnetic tracker
+	MT.initMagTracker();													// initialize magnetic tracker
 	MT.pairWithHapticsThread(&H.chaiMagDevice);							// share the chaiMagDevice with the magTracker
 	
 	// start the magnetic tracking thread
 	magTracker_thread = new cThread();
 	magTracker_thread->start(magTrackerThreadHandler, CTHREAD_PRIORITY_GRAPHICS);
+	#endif
 
 	// create a thread which starts the main graphics and haptics rendering loop
 	haptics_thread = new cThread();
 	haptics_thread->start(hapticThreadHandler, CTHREAD_PRIORITY_HAPTICS);
 
 	// start the motor thread (setup via gripper object during haptics_thread initialization)
-	motor_thread = new cThread();
-	motor_thread->start(motorThreadHandler, CTHREAD_PRIORITY_HAPTICS);
+	//motor_thread = new cThread();
+	//motor_thread->start(motorThreadHandler, CTHREAD_PRIORITY_HAPTICS);
 
 
 
@@ -157,6 +157,9 @@ void windowSizeCallback(GLFWwindow* a_window, int a_width, int a_height)
 
 void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, int a_mods)
 {
+	double defaultStretch = 0.50; // [N] ?
+
+
 	// filter calls that only include a key press
 	if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT))
 	{
@@ -169,28 +172,18 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
 		glfwSetWindowShouldClose(a_window, GLFW_TRUE);
 	}
 
-	// option - show/hide texture
-	else if (a_key == GLFW_KEY_1)
-	{
-		H.showTexture = !H.showTexture;
-		H.object->setUseTexture(H.showTexture);
-	}
 
-	// option - wire/fill triangle mode
-	else if (a_key == GLFW_KEY_2)
+	// option - enable/disable gravity
+	else if (a_key == GLFW_KEY_G)
 	{
-		H.showWireMode = !H.showWireMode;
-		H.object->setWireMode(H.showWireMode);
-	}
-
-	// option - show/hide normals
-	else if (a_key == GLFW_KEY_3)
-	{
-		H.showNormals = !H.showNormals;
-		cColorf color;
-		color.setRed();
-		H.object->setNormalsProperties(0.05, color);
-		H.object->setShowNormals(H.showNormals);
+		if (H.ODEWorld->getGravity().length() > 0.0)
+		{
+			H.ODEWorld->setGravity(cVector3d(0.0, 0.0, 0.0));
+		}
+		else
+		{
+			H.ODEWorld->setGravity(cVector3d(0.0, 0.0, -9.81));
+		}
 	}
 
 	// option - toggle fullscreen
@@ -222,11 +215,47 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
 		}
 	}
 
-	// option - toggle vertical mirroring
-	else if (a_key == GLFW_KEY_M)
+	//  DIRECTION CUES
+	else if (a_key == GLFW_KEY_K) {
+		H.keyboardCues = true;
+		H.m_fingerForce.set(0.0, 0.0, 0.0);
+		H.m_thumbForce.set(0.0, 0.0, 0.0);
+		cout << "Zero Position" << endl << endl;
+
+	}
+	else if (a_key == GLFW_KEY_M)		//down
 	{
-		H.mirroredDisplay = !H.mirroredDisplay;
-		H.camera->setMirrorVertical(H.mirroredDisplay);
+		H.m_fingerForce.set(0.0, 0.0, -defaultStretch);
+		H.m_thumbForce.set(0.0, 0.0, -defaultStretch);
+		cout << "DOWN" << endl;
+
+	}
+	else if (a_key == GLFW_KEY_I)		//up
+	{
+	//	H.m_fingerForce
+		H.m_fingerForce.set(0.0, 0.0, defaultStretch);
+		H.m_thumbForce.set(0.0, 0.0, defaultStretch);
+		cout << "UP" << endl;
+
+	}
+	else if (a_key == GLFW_KEY_L)		//forward
+	{
+		H.m_fingerForce.set(-defaultStretch, 0.0, 0.0);
+		H.m_thumbForce.set(-defaultStretch, 0.0, 0.0);
+		cout << "FORWARD" << endl;
+
+	}
+	else if (a_key == GLFW_KEY_J)		//backward
+	{
+		H.m_fingerForce.set(defaultStretch, 0.0, 0.0);
+		H.m_thumbForce.set(defaultStretch, 0.0, 0.0);
+		cout << "BACK" << endl;
+
+	}
+	else if (a_key == GLFW_KEY_R) {
+		H.m_fingerForce.set(0.0, 10, 0.0);
+		H.m_thumbForce.set(0.0, 10, 0.0);
+		cout << "GRIPPER FORCE" << endl;
 	}
 }
 
@@ -261,6 +290,7 @@ void close(void)
 
 	// delete resources
 	delete haptics_thread;
+	delete magTracker_thread;
 	delete H.world;
 	delete H.handler;
 }

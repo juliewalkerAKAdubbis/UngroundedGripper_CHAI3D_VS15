@@ -8,18 +8,21 @@
 #define MAXCOUNT  0xFFFFFFFF  // maximum number of counts for 32-bit counter channel
 #define MTR_RUN   0           // flag for motors to be operating normally
 #define MTR_SAFE  1           // flag for motors to be in "safe" mode
-#define VOLTRANGE 2           // output voltage range (2 = -5 to 5V, 3 = -10 to 10V)
+#define VOLTRANGESMALL	2     // output voltage range (2 = -5 to 5V, 3 = -10 to 10V)
+#define VOLTRANGEBIG	3
 #define MAXSETPNT 0xFFFF      // maximum analog output level (0x0000 to 0xFFFF covers output voltage range)
 #define CNTPERREV 500         // Maxon HEDL5540 resolution [cnts/rev]
 #define K_TORQ    0.127       // Maxon RE65 torque constant [N*m/A]
 #define I_MAX     1			  // maximum current rating of motors [A]
-#define VMAX	1			// maximum safe voltage for motors
-#define VMIN	-1			//minimum safe voltage for motors
-#define V_TO_I	 .1			  // amplifier gain
+#define VMAX	0.9			  // maximum safe voltage for motors
+#define VMIN	-0.9			 // minimum safe voltage for motors
+#define V_TO_I	 .1			  // amplifier gain (10 ohm resistor)
 #define VRANGE_LOW -5
 #define VRANGE_HI 5
 #define PI        3.141592
 #define DEBUG     0
+
+int zero[5] = { 0, 0, 0, 0, 0 };				// zero position
 
 bool connectToS826()
 {
@@ -39,8 +42,16 @@ void disconnectFromS826()
 bool initMotor(uint channel)
 {
     // set output range and initialize to 0 V = 1/2 max setpoint
-    int fail  = S826_DacRangeWrite(PCI_BOARD, channel, VOLTRANGE, MTR_RUN);
-        fail += S826_DacDataWrite(PCI_BOARD, channel, MAXSETPNT/2, MTR_RUN);
+	// use smaller range for pantograph motors (0-3) than gripper motor(4)
+	int fail;
+
+	if (channel == 4) {
+		 fail = S826_DacRangeWrite(PCI_BOARD, channel, VOLTRANGEBIG, MTR_RUN);
+	}
+	else {
+		fail = S826_DacRangeWrite(PCI_BOARD, channel, VOLTRANGESMALL, MTR_RUN);
+		fail += S826_DacDataWrite(PCI_BOARD, channel, MAXSETPNT / 2, MTR_RUN);
+	}
 
     // check for errors
     if (fail < 0) {
@@ -58,8 +69,9 @@ bool initEncod(uint channel)
 
     // set counts for channel to center of range
         fail += setCounts(channel, (MAXCOUNT-1)/2);
+		zero[channel] = (MAXCOUNT - 1) / 2;
 
-    // set up automatic snapshots upon index pulse
+		// set up automatic snapshots upon index pulse
         fail += S826_CounterSnapshotConfigWrite(PCI_BOARD, channel, MODE_SNP, 0);
 
     // check for errors
@@ -108,11 +120,31 @@ void setVolts(uint channel, double V)
 	if (channel != 4) {
 		if (V > VMAX)  V = VMAX;
 		if (V < VMIN)  V = VMIN;
+		// map voltage range to [0x0000,0xFFFF]
+		uint setpnt = (V - VRANGE_LOW) / (VRANGE_HI - VRANGE_LOW) * MAXSETPNT;
+		S826_DacDataWrite(PCI_BOARD, channel, setpnt, MTR_RUN);
+		cout << channel << ": " << V << "     ";
+	}
+	else {
+		if (V > 10.0)  V = 10.0;
+		if (V < -10.0)  V = -10.0;
+		// map voltage range to [0x0000,0xFFFF]
+		uint setpnt = (V - (-10)) / (10 - (-10)) * MAXSETPNT;
+		S826_DacDataWrite(PCI_BOARD, channel, setpnt, MTR_RUN);
+		cout << endl;
 	}
 
-    // map voltage range to [0x0000,0xFFFF]
-    uint setpnt = (V-VRANGE_LOW)/(VRANGE_HI-VRANGE_LOW) * MAXSETPNT;
-    S826_DacDataWrite(PCI_BOARD, channel, setpnt, MTR_RUN);
+	// DEBUG
+	//if (channel == 0) {
+	//	cout << "V0: " << V;
+	//}
+	//else if (channel == 1) {
+	//	cout << "    V1: " << V << endl;
+	//}
+
+
+	
+
 }
 
 
@@ -120,16 +152,14 @@ void setVolts(uint channel, double V)
 void setTorque(uint channel, double T)
 {
     // convert desired torque to (approximate) command voltage
-    double I = T / K_TORQ;						// ------ TO DO -------
-    if (fabs(I) > I_MAX) I = I_MAX;
-    double V = I / V_TO_I;
+    double I = T / k_torq[channel];						
+    double V = I / amp_gain[channel];
     setVolts(channel, V);
 
     // print commanded torque and voltage for debugging
-    if (DEBUG) {
-		cout << "Ch  #" << channel << " = " << T << " N" << endl;
-		cout << "Ch  #" << channel << " = " << V << " V" << endl;
-    }
+	//  if (DEBUG) {
+		//cout << "Ch  #" << channel << " = " << T << " N and " << V << " V" << endl;
+	//  }
 }
 
 int setCounts(uint channel, uint counts)
@@ -146,26 +176,28 @@ int getCounts(uint channel)
     // manually read encoder
     static uint counts;
     S826_CounterRead(PCI_BOARD, channel, &counts);
+	
+	// center about middle of range
+    //if (counts >= (MAXCOUNT-1)/2) {
+    //    return (int)counts - (MAXCOUNT-1)/2;
+    //} else {
+    //    return -(int)((MAXCOUNT-1)/2 - (int)counts);
+    //}
 
-    // center about middle of range
-    if (counts >= (MAXCOUNT-1)/2) {
-        return (int)counts - (MAXCOUNT-1)/2;
-    } else {
-        return -(int)((MAXCOUNT-1)/2 - (int)counts);
-    }
+	return counts;
 }
 
-double getAngle(uint channel, int zero)
+double getAngle(uint channel)
 {
     // read raw value from encoder and subtract offset
-    int countsOff = getCounts(channel) - zero;
+    int countsOff = getCounts(channel) - zero[channel];
 
     // print counts for debugging
 	if (DEBUG) cout << "Ch  #" << channel << " = " << countsOff << " cnts" << endl;
 
     // convert to radians, accounting for quadrature
-    double angle = countsOff * (2.0*PI)/(CNTPERREV*4.0);
-
+    double angle = (double)(countsOff * (2.0*PI)/(gearRatio[channel]* encoderLinesPerRev[channel]));
+	
     // print motor angle for debugging
 	if (DEBUG) cout << "Mtr #" << channel << " = " << angle*(180 / PI) << " deg" << endl;
 

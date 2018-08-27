@@ -3,11 +3,13 @@
 #include "motorcontrol.h"
 #include <cmath>
 #include <array>
+#include <algorithm>
 
-#define A_FILT         0.5      // weight for velocity filtering
+#define V_FILT         0.5      // weight for velocity filtering
+#define F_FILT		   0.1		// weight for force filtering
 #define INT_CLMP       750      // maximum allowed integrated error
-#define THRESH         0.01     // threshold for angle equality
 #define PI  3.14159
+#define MAX_STRETCH 6.0			// maximum radius of stretch from centerpoint
 
 enum fingers {
 	thumb,
@@ -29,7 +31,7 @@ public:
 
 
 	// arm lengths: upper left, bottom left, bottom right, upper right, top bar
-	double len[5] = { 13, 11, 11, 13, 15 };		// CORRECT THESE TO MATCH DEVCIE
+	double len[5] = { 13.0, 11.0, 11.0, 13.0, 15.0 };		// ----TO DO-----CORRECT THESE TO MATCH DEVCIE
 	double center[2] = { PI / 2, PI / 2 };
 
 	double m_finger;		// index or thumb (mirrored x position values)
@@ -38,6 +40,7 @@ public:
 	chai3d::cVector3d m_thDes;              // desired joint angles [rad]
 	chai3d::cVector3d m_posDes;             // desired end-effector position [m]
 
+	chai3d::cVector3d centerPoint;
 
 	chai3d::cMutex m_pantographLock;
 
@@ -52,12 +55,11 @@ public:
 //	chai3d::cVector3d inverseKin(chai3d::cVector3d a_pos);
 
 protected:
-	double k_skin = 10;				// scale force to skin displacement
+	double k_skin = 0.1;						// [N/mm] scale force to skin displacement
 	bool m_pantographAvailable;            // TRUE = exoskeleton instance has been created
 	bool m_pantographReady;                // TRUE = connection to exoskeleton successful
 	void inverseKinematics();
-//	chai3d::cVector3d getAngles();
-//	chai3d::cMatrix3d Jacobian(chai3d::cVector3d a_th);
 	double angleDiff(double a_thA, double a_thB);
 	chai3d::cVector3d vecDiff(chai3d::cVector3d a_vecA, chai3d::cVector3d a_vecB);
+
 };

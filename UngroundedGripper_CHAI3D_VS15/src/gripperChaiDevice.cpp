@@ -140,8 +140,7 @@ namespace chai3d {
 		m_specifications.m_workspaceRadius = 0.2;     // [m]
 
 													  // the maximum opening angle of the gripper
-		m_specifications.m_gripperMaxAngleRad = cDegToRad(60);
-
+		m_specifications.m_gripperMaxAngleRad = cDegToRad(90);
 
 		////////////////////////////////////////////////////////////////////////////
 		/*
@@ -219,7 +218,7 @@ namespace chai3d {
 		////////////////////////////////////////////////////////////////////////////
 
 
-		scaleFactor = 1.0;
+		scaleFactor = 2;
 
 		//m_deviceAvailable = false;	// this value should become 'true' when the device is available.
 		m_deviceAvailable = true;		// my code making device available
@@ -522,6 +521,7 @@ namespace chai3d {
 		double r00, r01, r02, r10, r11, r12, r20, r21, r22;
 		cMatrix3d frame; cMatrix3d deviceRotation;
 		// *** INSERT YOUR CODE HERE, MODIFY CODE BELLOW ACCORDINGLY ***
+		
 		// if the device does not provide any rotation capabilities
 		// set the rotation matrix equal to the identity matrix.
 		frame.identity();
@@ -543,15 +543,9 @@ namespace chai3d {
 		//	frame.rotateAboutLocalAxisDeg(0, 1, 0, 9 - thumbTrackerTilt);
 		//}
 
-#ifndef MAGTRACKER
-		//frame.rotateAboutGlobalAxisDeg(0,0,1,-90);
-		//    frame.rotateAboutGlobalAxisDeg(0,1,0,90);
-		//    frame.rotateAboutGlobalAxisDeg(1,0,0,-90);
-		//    frame.rotateAboutGlobalAxisDeg(0,1,0,-45);
-#endif
-
 		// store new rotation matrix
 		a_rotation = frame;
+
 		// estimate angular velocity
 		estimateAngularVelocity(a_rotation);
 
@@ -583,15 +577,15 @@ namespace chai3d {
 
 		bool result = C_SUCCESS;
 
-		// *** INSERT YOUR CODE HERE, MODIFY CODE BELLOW ACCORDINGLY ***
-
 		// return gripper angle in radian
 
 		// read from gripper motor encoder
 		// a_angle = encoderPosition(gripMotor);
 
-		a_angle = PI / 4;  // a_angle = getGripperAngleInRadianFromMyDevice();
+		a_angle = -2.0*getAngle(gripMotor) + gripperStartAngle;  // a_angle = getGripperAngleInRadianFromMyDevice();
+		a_angle = min(cDegToRad(110), max(0.0, a_angle));
 
+		//cout << cRadToDeg(a_angle) << "   " << endl;
 		estimateGripperVelocity(a_angle);				// estimate gripper velocity
 
 		// exit

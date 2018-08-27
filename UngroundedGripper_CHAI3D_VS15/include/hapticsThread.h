@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <GLFW/glfw3.h>
+#include "CODE.h"
 
 using namespace chai3d;
 using namespace std;
@@ -29,10 +30,13 @@ class hapticsThread
 {
 public:
 
+	bool keyboardCues = true; // turns off force feedback and uses keyboard control
+
 	// initialization functions
 	int initialize(void);
 	int initializeChai3dStuff(void);
 	int setUpWorld(void);
+	int setUpODEWorld(void);
 	int setUpHapticDevice(void);
 	int addObjects(void);
 	void setUpWidgets(void);
@@ -68,8 +72,7 @@ public:
 	chai3d::cMutex m_worldLock;
 	chai3d::cMutex m_runLock;
 
-//simulation status
-	bool simulationRunning = true;
+	bool simulationRunning = true;			//simulation status
 	bool simulationFinished = false;
 	bool checkSimulationStatus(void);
 
@@ -77,9 +80,38 @@ public:
 	chai3d::cFrequencyCounter graphicRate;  // counter for graphics updates
 	chai3d::cFrequencyCounter hapticRate;   // counter for haptics updates
 
+	clock_t* m_timer;						// timer for graphics updates
+
+	cFontPtr font;				// a font for rendering text
+	cLabel* labelRates;			// a label to display the rate [Hz] at which the simulation is running
+	cLabel* labelForce;			// a label to display the force on the gripper tool
+
+//---------------------------------------------------------------------------
+// ODE MODULE VARIABLES
+//---------------------------------------------------------------------------
+
+	cODEWorld* ODEWorld;
+
+	// ODE objects
+	cODEGenericBody* ODEBody0;
+	cODEGenericBody* ODEBody1;
+	cODEGenericBody* ODEBody2;
+
+	// ODE objects
+	cODEGenericBody* ODEGPlane0;
+	cODEGenericBody* ODEGPlane1;
+	cODEGenericBody* ODEGPlane2;
+	cODEGenericBody* ODEGPlane3;
+	cODEGenericBody* ODEGPlane4;
+	cODEGenericBody* ODEGPlane5;
+
+	//---------------------------------------------------------------------------
+	// OBJECTS
+	//---------------------------------------------------------------------------
+
+	double workspaceScaleFactor;
 
 	// virtual objects
-	cMultiMesh* object;
 	cShapeCylinder* cylinder;
 	cShapeSphere* m_curSphere0;
 	cShapeSphere* m_curSphere1;
@@ -87,12 +119,15 @@ public:
 	cMesh* ground;
 	cShapeBox* m_gripperBase;
 
+	//---------------------------------------------------------------------------
+	// CHAI3D World
+	//---------------------------------------------------------------------------
+
 	chai3d::cWorld* world;                  // CHAI world
 	chai3d::cCamera* camera;                // camera to render the world
 	chai3d::cSpotLight* light;       // light to illuminate the world
 									 // a handle to window display context
 
-	clock_t* m_timer;						// timer for graphics updates
 
 
 	int width;                              // width of view
@@ -100,9 +135,7 @@ public:
 	int mouseX;                             // cursor X-position
 	int mouseY;                             // cursor Y-position
 
-	cFontPtr font;				// a font for rendering text
-	cLabel* labelRates;			// a label to display the rate [Hz] at which the simulation is running
-	cLabel* labelForce;			// a label to display the force on the gripper tool
+
 
 	chai3d::cGenericHapticDevicePtr chaiMagDevice;
 

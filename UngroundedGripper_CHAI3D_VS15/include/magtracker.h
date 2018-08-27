@@ -8,6 +8,7 @@
 #define NUM_TRACKERS 1
 
 using namespace std;
+using namespace chai3d;
 
 class magTrackerThread
 {
@@ -23,8 +24,8 @@ public:
 	// thread safety
 	chai3d::cMutex m_magTrackerLock;
 
-	void initialize();
-	void CheckTrackerPoses();
+	void initMagTracker();
+	void CheckTrackerPose();
 	
 	// device, pair with haptics thread
 	chai3d::cGenericHapticDevicePtr* m_chaiMagDevice;

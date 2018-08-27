@@ -20,6 +20,7 @@ pantograph::pantograph() {
 	m_th = cVector3d(0.0, 0.0, 0.0);
 	m_thDes = cVector3d(0.0, 0.0, 0.0);
 
+	centerPoint.set(-(len[4] / 2.0), 0.0, 17.0); //[mm]				// pantograph x positive to left when looking at motor axle, z positive down
 
 }
 
@@ -28,10 +29,29 @@ pantograph::~pantograph(void) {
 }
 
 
-void pantograph::setPos(cVector3d a_force){		//double a_x, double a_z) {
-	m_posDes.x(a_force.x() / k_skin);
-	m_posDes.z(a_force.z() / k_skin);
+void pantograph::setPos(cVector3d a_force) {		//double a_x, double a_z) {
+	if (m_finger == index) {
+		a_force.x(-a_force.x());		// x axis directions flipped for index finger
+	}
+	if (abs(a_force.x()) > THRESH || abs(a_force.z()) > THRESH) {
+		cVector3d stretch(a_force.x() / k_skin, 0.0, -a_force.z() / k_skin); // pangtograph x toward left, z down
+
+		// keep within center of workspace
+		if (stretch.x() > MAX_STRETCH) { stretch.x(MAX_STRETCH); }
+		if (stretch.x() < -MAX_STRETCH) { stretch.x(-MAX_STRETCH); }
+		if (stretch.z() > MAX_STRETCH) { stretch.z(MAX_STRETCH); }
+		if (stretch.z() < -MAX_STRETCH) { stretch.z(-MAX_STRETCH); }
+
+		m_posDes.x(centerPoint.x() + stretch.x());
+		m_posDes.z(centerPoint.z() + stretch.z());
+
+	}
+	else {
+		m_posDes.x(centerPoint.x());
+		m_posDes.z(centerPoint.z());
+	}
 	inverseKinematics();
+	
 }
 
 void pantograph::inverseKinematics() {
